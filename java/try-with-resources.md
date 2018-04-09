@@ -18,3 +18,12 @@ String readFirstLineFromFileWithFinallyBlock(String path) throws IOException {
 这种语法有两种弊端
 1.每个资源都要配合一个finally
 2.在finally语句块中如果发生异常，就会抛出。但是实际情况下我们期待它是正常的，所以必须在finally语句块中必须添加 try...
+
+### 使用try-with-resources语法
+```
+String readFirstLineFromFileWithFinallyBlock(String path) throws IOException {
+    try( BufferedReader br = new BufferedReader(new FileReader(path))) {
+        return br.readLine();
+    }
+}
+```
