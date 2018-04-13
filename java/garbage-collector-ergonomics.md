@@ -1,4 +1,5 @@
 # 垃圾收集器人体工程学(Garbage Collector Ergonomics)
+[原文地址](https://docs.oracle.com/javase/1.5.0/docs/guide/vm/gc-ergonomics.html)
 
 以下更改将在J2SE 5.0中生效
 
