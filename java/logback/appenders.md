@@ -1,4 +1,5 @@
-# Appender
+# [Appender](https://logback.qos.ch/manual/appenders.html)
+
 ## 什么是Appender
 Logback将写入日志事件的任务委托给名为appender的组件。 Appender必须实现ch.qos.logback.core.Appender接口。 这个接口的显着方法总结如下：
 ```
@@ -215,12 +216,12 @@ append | boolean |
 encoder | Encoder |
 rollingPolicy | RollingPolicy | 此选项是组件，它将决定发生翻滚时RollingFileAppender的行为。 请参阅以下更多信息。
 triggeringPolicy | TriggeringPolicy	 | 此选项是将告诉RollingFileAppender何时激活翻转过程的组件。 请参阅以下更多信息。
-rudent |  boolean | FixedWindowRollingPolicy在审慎模式下不受支持
+prudent |  boolean | FixedWindowRollingPolicy在审慎模式下不受支持
 
 ### 滚动策略概述
 RollingPolicy负责涉及文件移动和重命名的翻转过程。
 
-RollingPolicy界面如下所示：
+RollingPolicy接口如下所示：
 ```
 package ch.qos.logback.core.rolling;  
 
@@ -249,3 +250,269 @@ maxHistory | int |
 totalSizeCap | int |
 cleanHistoryOnStart | boolean | 
 
+这里有一些fileNamePattern值和一个解释它们的影响
+fileNamePattern	|Rollover schedule|	Example
+--- | --- | ---
+/wombat/foo.%d | 每日滚动（午夜）。 由于省略了％d标记说明符的可选时间和日期模式，因此假定为yyyy-MM-dd的默认模式，该模式对应于每日滚动。| 
+/wombat/%d{yyyy/MM}/foo.txt | 在每个月初开始滚动。 |
+/wombat/foo.%d{yyyy-ww}.log | 在每周的第一天滚动。 请注意，本周的第一天取决于语言环境。 |
+/wombat/foo%d{yyyy-MM-dd_HH}.log | 在每个小时的顶部滚动。 |
+/wombat/foo%d{yyyy-MM-dd_HH-mm}.log | 每分钟开始时都会滚动。|
+/wombat/foo%d{yyyy-MM-dd_HH-mm, UTC}.log | 每分钟开始时都会滚动。|
+/foo/%d{yyyy-MM,aux}/%d.log | 每日滚动。 位于包含年份和月份的文件夹下的档案|
+/wombat/foo.%d.gz | 使用自动GZIP压缩归档文件的每日滚动（在午夜）。 |
+任何向前或向后的斜线字符都被解释为文件夹（目录）分隔符。 任何必需的文件夹将根据需要创建。 因此，您可以轻松地将日志文件放在单独的文件夹中。
+TimeBasedRollingPolicy支持自动文件压缩。 如果fileNamePattern选项的值以.gz或.zip结尾，则启用此功能。
+
+fileNamePattern具有双重用途。首先，通过研究模式，logback计算请求的翻转周期。其次，它计算每个存档文件的名称。请注意，两种不同的模式可以指定相同的周期。模式yyyy-MM和yyyy @ MM都指定每月翻转，但生成的归档文件将带有不同的名称。
+
+通过设置文件属性，可以分离活动日志文件的位置和归档日志文件的位置。日志记录输出将被定位到文件属性指定的文件中。由此可见，活动日志文件的名称不会随着时间而改变。但是，如果您选择省略文件属性，则将根据fileNamePattern的值为每个周期重新计算活动文件。通过保持文件选项未设置，可以避免文件重命名错误，这些错误在翻转过程中存在引用日志文件的外部文件句柄时发生。
+
+maxHistory属性控制要保留的最大档案文件数量，删除较旧的文件。例如，如果您指定每月翻转，并将maxHistory设置为6，那么6个月的归档文件将保留在删除6个月以上的文件中。请注意，当旧的归档日志文件被删除时，为日志文件归档而创建的任何文件夹将根据需要删除。
+
+由于各种技术原因，翻滚不是时钟驱动的，而是取决于记录事件的到来。例如，在2002年3月8日，假设fileNamePattern设置为yyyy-MM-dd（每日滚动），午夜之后第一个事件的到达将触发滚动。如果没有记录事件发生，比如午夜23分47秒，那么实际上会在3月9日00：23'47 AM而不是凌晨0:00发生滚动。因此，根据事件的到达率，可能会触发延迟。但是，无论延迟如何，翻转算法都是正确的，因为在某个时间段内生成的所有日志记录事件都将输出到划定该时间段的正确文件中。
+
+以下是RollingFileAppender与TimeBasedRollingPolicy配合使用的示例配置。
+
+##### logback-RollingTimeBased.xml
+```
+<configuration>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logFile.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- daily rollover -->
+      <fileNamePattern>logFile.%d{yyyy-MM-dd}.log</fileNamePattern>
+
+      <!-- keep 30 days' worth of history capped at 3GB total size -->
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>3GB</totalSizeCap>
+
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender> 
+
+  <root level="DEBUG">
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>
+```
+
+下一个配置示例以谨慎模式说明了与TimeBasedRollingPolicy关联的RollingFileAppender的用法。
+
+##### logback-PrudentTimeBasedRolling.xml
+```
+<configuration>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!-- Support multiple-JVM writing to the same log file -->
+    <prudent>true</prudent>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>logFile.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>30</maxHistory> 
+      <totalSizeCap>3GB</totalSizeCap>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender> 
+
+  <root level="DEBUG">
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>
+```
+
+#### 基于尺寸和时间的滚动策略
+有时，您可能希望按日期归档文件，但同时限制每个日志文件的大小，特别是如果后处理工具对日志文件施加了大小限制。 为了解决这个需求，logback附带了SizeAndTimeBasedRollingPolicy。
+
+请注意，TimeBasedRollingPolicy已允许限制归档日志文件的组合大小。 如果您只希望限制日志归档的组合大小，那么上面描述的TimeBasedRollingPolicy和设置totalSizeCap属性应该足够充分。
+
+以下是一个示例配置文件，演示基于时间和大小的日志文件归档。
+##### logback-sizeAndTime.xml
+```
+<configuration>
+  <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>mylog.txt</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <!-- rollover daily -->
+      <fileNamePattern>mylog-%d{yyyy-MM-dd}.%i.txt</fileNamePattern>
+       <!-- each file should be at most 100MB, keep 60 days worth of history, but at most 20GB -->
+       <maxFileSize>100MB</maxFileSize>    
+       <maxHistory>60</maxHistory>
+       <totalSizeCap>20GB</totalSizeCap>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%msg%n</pattern>
+    </encoder>
+  </appender>
+
+
+  <root level="DEBUG">
+    <appender-ref ref="ROLLING" />
+  </root>
+
+</configuration>
+```
+请注意除“％d”之外的“％i”转换标记。 ％i和％d代币都是强制性的。 每当当前日志文件在当前时间段结束之前达到maxFileSize时，它就会被存档，索引从0开始增加。
+
+基于大小和时间的归档支持删除旧的归档文件。 您需要指定要使用maxHistory属性保留的句点数。 当您的应用程序停止并重新启动时，日志记录将继续保留在正确的位置，即当前时间段的最大索引编号。
+
+在1.1.7之前的版本中，这个文档提到了一个名为SizeAndTimeBasedFNATP的组件。 但是，由于SizeAndTimeBasedFNATP提供了更简单的配置结构，因此我们不再记录SizeAndTimeBasedFNATP。 不过，使用SizeAndTimeBasedFNATP的早期配置文件仍然可以继续正常工作。 实际上，SizeAndTimeBasedRollingPolicy是用SizeAndTimeBasedFNATP子组件实现的。
+
+#### FixedWindowRollingPolicy
+在翻转时，FixedWindowRollingPolicy根据下面描述的固定窗口算法重命名文件。
+
+fileNamePattern选项表示归档（翻转）日志文件的文件名称模式。 该选项是必需的，并且必须在模式中的某处包含整数标记％i。
+
+以下是FixedWindowRollingPolicy的可用属性
+
+Property Name | Type | Description
+--- | --- | ---
+minIndex | int | 该选项表示窗口索引的下限。
+maxIndex | int | 此选项表示窗口索引的上限。
+fileNamePattern | String | 此选项表示重命名日志文件时将由FixedWindowRollingPolicy遵循的模式。 它必须包含字符串％i，它将指示当前窗口索引值将被插入的位置。
+
+考虑到固定窗口滚动策略需要与窗口大小一样多的文件重命名操作，强烈建议不要使用大窗口大小。 当用户指定较大的值时，当前实现将自动将窗口大小减小到20。
+
+让我们回顾一下固定窗口翻转策略的更具体的例子。 假设minIndex设置为1，maxIndex设置为3，fileNamePattern属性设置为foo％i.log，并且该文件属性设置为foo.log。
+
+Number of rollovers | Active output target | Archived log files | Description
+--- | --- | --- | ---
+0 | foo.log | - |
+1 | foo.log | foo1.log | 
+2 | foo.log | foo1.log,foo2.log |
+3 | foo.log | foo1.log,foo1.log,foo3.log |
+4 | foo.log | foo1.log,foo2.log,foo3.log | 在这个和随后的轮次中，翻转首先删除foo3.log。 其他文件通过增加其索引来重命名，如前面的步骤所示。 在此和随后的转换中，将有三个存档日志和一个活动日志文件。
+
+他在下面的配置文件给出了一个配置RollingFileAppender和FixedWindowRollingPolicy的例子。 请注意，即使File选项包含与fileNamePattern选项一起传递的相同信息，File选项也是必需的。
+
+##### logback-RollingFixedWindow.xml
+```
+<configuration>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>test.log</file>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>tests.%i.log.zip</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>3</maxIndex>
+    </rollingPolicy>
+
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender>
+        
+  <root level="DEBUG">
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>
+```
+
+### 触发政策概述
+TriggeringPolicy实现负责指示RollingFileAppender何时翻滚。
+
+TriggeringPolicy接口只包含一个方法。
+```
+package ch.qos.logback.core.rolling;
+
+import java.io.File;
+import ch.qos.logback.core.spi.LifeCycle;
+
+public interface TriggeringPolicy<E> extends LifeCycle {
+
+  public boolean isTriggeringEvent(final File activeFile, final <E> event);
+}
+```
+isTriggeringEvent（）方法将当前正在处理的活动文件和记录事件作为参数。 具体的实现基于这些参数确定是否应该发生翻转。
+
+最广泛使用的触发策略，即兼作滚动策略的TimeBasedRollingPolicy，早已在其他滚动策略中讨论过。
+
+#### SizeBasedTriggeringPolicy
+SizeBasedTriggeringPolicy查看当前活动文件的大小。 如果长度大于指定的大小，它将通知拥有的RollingFileAppender触发现有活动文件的翻转。
+
+SizeBasedTriggeringPolicy只接受一个参数，即maxFileSize，默认值为10 MB。
+
+maxFileSize选项可以以字节，千字节，兆字节或千兆字节的形式指定，方法是用KB，MB和GB分别后缀数字。 例如，5000000,5000KB，5MB和2GB都是有效值，前三者是等效的。
+
+下面是一个RollingFileAppender结合SizeBasedTriggeringPolicy在日志文件大小达到5MB时触发滚动的示例配置。
+
+##### logback-RollingSizeBased.xml
+```
+<configuration>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>test.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>test.%i.log.zip</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>3</maxIndex>
+    </rollingPolicy>
+
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender>
+        
+  <root level="DEBUG">
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>
+```
+
+#### Logback Classic
+虽然日志记录事件在logback-core中是通用的，但在logback-classic中，它们始终是ILoggingEvent的实例。 Logback-classic只不过是处理ILoggingEvent实例的专用处理管道。
+
+#### SocketAppender and SSLSocketAppender
+迄今涵盖的appender只能登录本地资源。相反，SocketAppender被设计为通过在线路上传输序列化的ILoggingEvent实例来登录到远程实体。在线路上使用SocketAppender日志记录事件时，将以明文形式发送。但是，使用SSLSocketAppender时，记录事件通过安全通道传递。
+
+序列化事件的实际类型是实现ILoggingEvent接口的LoggingEventVO。尽管如此，就记录事件而言，远程记录是非侵入性的。在反序列化之后的接收端，可以将事件记录为在本地生成。在不同计算机上运行的多个SocketAppender实例可以将其日志记录输出指向格式固定的中央日志服务器。 SocketAppender不采用关联的布局，因为它将序列化事件发送到远程服务器。 SocketAppender在传输控制协议（TCP）层之上运行，它提供可靠的，有序的，流量控制的端到端八位字节流。因此，如果远程服务器可以访问，那么日志事件最终会到达那里。否则，如果远程服务器关闭或无法访问，则记录事件将被简单地删除。如果服务器恢复运行，则事件传输将会以透明方式恢复。这种透明的重新连接是由定期尝试连接到服务器的连接器线程执行的。
+
+记录事件由本地TCP实现自动缓冲。这意味着如果到服务器的链接速度较慢但仍比客户端生成事件的速度快，则客户端不会受到网络连接速度较慢的影响。但是，如果网络连接速度低于事件产生速度，则客户端只能以网络速率进行。特别是在网络连接到服务器的极端情况下，客户端将最终被阻止。或者，如果网络链接已启动，但服务器已关闭，则客户端不会被阻止，但由于服务器不可用，日志事件将丢失。
+
+即使SocketAppender不再连接到任何记录器，它也不会在存在连接器线程时被垃圾收集。连接器线程仅在与服务器的连接关闭时才存在。为了避免这种垃圾收集问题，你应该明确地关闭SocketAppender。长寿命的应用程序创建/销毁许多SocketAppender实例应该知道这个垃圾收集问题。大多数其他应用程序可以安全地忽略它如果托管SocketAppender的JVM在SocketAppender关闭之前退出，无论是显式还是在垃圾回收之后，管道中可能会丢失未传输的数据。这是基于Windows的系统上的常见问题。为了避免丢失数据，在退出应用程序之前，通常显式关闭（）SocketAppender或通过调用LoggerContext的stop（）方法就足够了。
+
+远程服务器由remoteHost和端口属性标识。下表中列出了SocketAppender属性。 SSLSocketAppender支持许多其他配置属性，这些属性在“使用SSL”一节中详细介绍。
+
+Property Name | Type | Desc 
+--- | --- | ---
+includeCallerData | boolean | includeCallerData选项采用布尔值。 如果为true，则调用者数据将可用于远程主机。 默认情况下，没有来电者数据被发送到服务器。
+port | int | 
+reconnectionDelay | Duration | 
+queueSize | int | 
+eventDelayLimit | Duration |
+remoteHost | String |
+ssl | SSLConfiguration	 |
+
+#### 记录服务器选项
+标准的Logback Classic发行版包含两个可用于从SocketAppender或SSLSocketAppender接收日志记录事件的服务器选项。
+
+ServerSocketReceiver及其启用SSL的对应方SSLServerSocketReceiver是可以在应用程序的logback.xml配置文件中配置的接收器组件，以便接收来自远程套接字appender的事件。 有关配置详细信息和使用示例，请参阅Receivers。
+SimpleSocketServer及其支持SSL的对应方SimpleSSLSocketServer都提供了一个易于使用的独立Java应用程序，该应用程序旨在通过您的shell命令行界面进行配置和运行。 这些应用程序只是等待来自SocketAppender或SSLSocketAppender客户端的日志事件。 根据本地服务器策略记录每个收到的事件。 用法示例如下。
+
+#### SimpleSocketServer
+
+#### ServerSocketAppender and SSLServerSocketAppender
+
+### SMTPAppender
+...
+
+### DBAppender
+...
+
+### SyslogAppender
+...
+
+### SiftingAppender
+...
+
+### AsyncAppender
+...
