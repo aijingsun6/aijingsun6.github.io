@@ -6,4 +6,4 @@
 -  [Chapter 3: Configuration](./logback/configuration.md)
 -  [Chapter 4: Appenders](./logback/appenders.md)
 -  [Chapter 5: Encoders](./logback/encoders.md)
--  [Chapter 6: Layouts](./logback/layouts.md))
+-  [Chapter 6: Layouts](./logback/layouts.md)
