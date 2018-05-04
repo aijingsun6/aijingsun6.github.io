@@ -5,6 +5,7 @@
 -  [The Java HotSpot Performance Engine Architecture](./java/java-hotspot-performance-engine-archi.md)
 -  [Garbage Collector Ergonomics](./java/garbage-collector-ergonomics.md)
 -  [logback](./java/logback.md)
+-  [Hashtable.java](./java/Hashtable.md)
 
 ### other
 -  [Restful Web Services Cookbook](./restful_web_services_cookbook.md)
