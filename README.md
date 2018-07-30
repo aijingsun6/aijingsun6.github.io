@@ -17,6 +17,7 @@
 -  [process](./erlang/process.md)
 -  [proc_lib](./erlang/proc_lib.md)
 -  [gen_server](./erlang/gen_server.md)
+-  [rpc](./erlang/rpc.md)
 
 ### other
 -  [Restful Web Services Cookbook](./restful_web_services_cookbook.md)
