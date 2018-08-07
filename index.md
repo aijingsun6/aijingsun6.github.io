@@ -7,5 +7,14 @@
 -  [logback](./java/logback.md)
 -  [Hashtable.java](./java/Hashtable.md)
 
+### erlang
+-  [process](./erlang/process.md)
+-  [proc_lib](./erlang/proc_lib.md)
+-  [gen_server](./erlang/gen_server.md)
+-  [rpc](./erlang/rpc.md)
+-  [pg2](./erlang/pg2.md)
+-  [erlang 常见错误](./erlang/error.md)
+
+
 ### other
 -  [Restful Web Services Cookbook](./restful_web_services_cookbook.md)
