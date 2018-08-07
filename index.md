@@ -13,6 +13,7 @@
 -  [gen_server](./erlang/gen_server.md)
 -  [rpc](./erlang/rpc.md)
 -  [pg2](./erlang/pg2.md)
+-  [httpc 的性能分析](./erlang/httpc.md)
 -  [erlang 常见错误](./erlang/error.md)
 
 
