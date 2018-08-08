@@ -7,6 +7,7 @@
 -  [logback](./java/logback.md)
 -  [Hashtable.java](./java/Hashtable.md)
 
+
 ### erlang
 -  [process](./erlang/process.md)
 -  [proc_lib](./erlang/proc_lib.md)
@@ -14,7 +15,7 @@
 -  [rpc](./erlang/rpc.md)
 -  [pg2](./erlang/pg2.md)
 -  [httpc的性能分析](./erlang/httpc.md)
--  [start up](./erlang/start_up.md)
+-  [start_up](./erlang/start_up.md)
 -  [erlang 常见错误](./erlang/error.md)
 
 
