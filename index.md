@@ -18,6 +18,7 @@
 -  [pg2](./erlang/pg2.md)
 -  [httpc的性能分析](./erlang/httpc.md)
 -  [start_up](./erlang/start_up.md)
+-  [escript with rpc](./erlang/escript_with_rpc.md)
 -  [erlang 常见错误](./erlang/error.md)
 
 
