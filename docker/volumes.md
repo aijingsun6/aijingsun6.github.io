@@ -93,7 +93,7 @@ $ docker container rm nginxtest
 
 $ docker volume rm nginx-vol
 ```
-#### 使用制度卷
+#### 使用只读卷
 ```
 $ docker run -d \
   --name=nginxtest \
