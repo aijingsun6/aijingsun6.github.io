@@ -14,3 +14,4 @@
 5. [context manager](./python/context_manager.md)
 6. [asynchronous context manager](./python/asynchronous_context_manager.md)
 7. [package](./python/package.md)
+8. [callable](./python/callable.md)
