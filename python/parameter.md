@@ -1,7 +1,5 @@
 # parameter (形参)
 
-
-
 ### 1.定义
 function/method 定义中的命名实体，它指定函数可以接受的一个 argument(参数)
 
@@ -79,7 +77,7 @@ output:
 
 ### 3.parameter (形参) vs argument(参数)
 
-说到parameter (形参),不得不提到argument(参数),一般称argument(参数)为实参
+说到 parameter (形参),不得不提到argument(参数),一般称argument(参数)为实参
 
 形参 是由出现在函数定义中的名称来定义的，而 参数 则是在调用函数时实际传入的值。 形参定义了一个函数能接受什么 参数种类
 
